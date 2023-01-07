@@ -1,4 +1,4 @@
-import { AxiosResponse, default as Axios } from 'axios'
+import {AxiosProgressEvent, AxiosResponse, default as Axios} from 'axios'
 import debounce from './debounce'
 import {
   fireBeforeEvent,
@@ -354,11 +354,15 @@ export class Router {
         ...(errorBag && errorBag.length ? { 'X-Inertia-Error-Bag': errorBag } : {}),
         ...(this.page.version ? { 'X-Inertia-Version': this.page.version } : {}),
       },
-      onUploadProgress: (progress) => {
+      onUploadProgress: (progressEvent: AxiosProgressEvent) => {
         if (data instanceof FormData) {
-          progress.percentage = Math.round((progress.loaded / progress.total) * 100)
-          fireProgressEvent(progress)
-          onProgress(progress)
+          const {total} = progressEvent
+          // @ts-ignore
+          progressEvent.progress = Math.round((progressEvent.loaded * 100) / total)
+          // @ts-ignore
+          fireProgressEvent(progressEvent)
+          // @ts-ignore
+          onProgress(progressEvent)
         }
       },
     })
