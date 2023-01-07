@@ -1,4 +1,4 @@
-import { createHeadManager, Page, PageProps, router } from '@inertiajs/core'
+import { createHeadManager, Page, PageProps, router } from '@swarakaka/core'
 import {
   computed,
   ComputedRef,
@@ -9,11 +9,13 @@ import {
   Plugin,
   PropType,
   ref,
-  shallowRef,
+  nextTick,
 } from 'vue'
 import remember from './remember'
 import { VuePageHandlerArgs } from './types'
 import useForm from './useForm'
+import {DialogPayload} from "@swarakaka/core";
+import cloneDeep from 'lodash.clonedeep'
 
 export interface InertiaAppProps {
   initialPage: Page
@@ -25,10 +27,13 @@ export interface InertiaAppProps {
 
 export type InertiaApp = DefineComponent<InertiaAppProps>
 
-const component = ref(null)
 const page = ref<Partial<Page>>({})
-const layout = shallowRef(null)
-const key = ref(null)
+const pageKey = ref(null)
+const pageComponent = ref(null)
+
+const dialog = ref<Partial<DialogPayload>>({})
+const dialogKey = ref(null)
+const dialogComponent = ref(null)
 let headManager = null
 
 const App: InertiaApp = defineComponent({
@@ -58,9 +63,9 @@ const App: InertiaApp = defineComponent({
     },
   },
   setup({ initialPage, initialComponent, resolveComponent, titleCallback, onHeadUpdate }) {
-    component.value = initialComponent ? markRaw(initialComponent) : null
+    pageComponent.value = initialComponent ? markRaw(initialComponent) : null
+    pageKey.value = null
     page.value = initialPage
-    key.value = null
 
     const isServer = typeof window === 'undefined'
     headManager = createHeadManager(isServer, titleCallback, onHeadUpdate)
@@ -70,44 +75,82 @@ const App: InertiaApp = defineComponent({
         initialPage,
         resolveComponent,
         swapComponent: async (args: VuePageHandlerArgs) => {
-          component.value = markRaw(args.component)
-          page.value = args.page
-          key.value = args.preserveState ? key.value : Date.now()
+          const { dialog: _dialog, ..._page } = args.page
+
+          page.value = _page
+          pageKey.value = (args.preserveState || args.dialogComponent) ? pageKey.value : Date.now()
+          pageComponent.value = markRaw(args.component)
+
+          if (args.dialogComponent) {
+            nextTick(() => {
+              function shouldAppear() {
+                const {dialogKey: newKey} = args.dialogComponent
+                const currentKey = [dialogComponent.value || {}, ...Object.values(dialogComponent.value?.components || {})].find(component => component.dialogKey)?.dialogKey
+
+                return !_dialog.eager &&
+                    !(dialog.value.open &&
+                        (_dialog.component === dialog.value.component || (newKey && currentKey && newKey === currentKey))
+                    )
+              }
+
+              dialog.value = { ...cloneDeep(_dialog), open: true, appear: shouldAppear() }
+              dialogKey.value = (args.preserveState && args.dialogComponent) ? dialogKey.value : Date.now()
+              dialogComponent.value = markRaw(args.dialogComponent)
+            })
+          } else if (dialog.value.open === true) {
+            dialog.value.open = false
+          }
         },
       })
 
       router.on('navigate', () => headManager.forceUpdate())
     }
 
-    return () => {
-      if (component.value) {
-        component.value.inheritAttrs = !!component.value.inheritAttrs
 
-        const child = h(component.value, {
+      function renderPage() {
+        pageComponent.value.inheritAttrs = !!pageComponent.value.inheritAttrs
+
+        return h(pageComponent.value, {
           ...page.value.props,
-          key: key.value,
+          dialog: false,
+          key: pageKey.value,
         })
+      }
 
-        if (layout.value) {
-          component.value.layout = layout.value
-          layout.value = null
-        }
-
-        if (component.value.layout) {
-          if (typeof component.value.layout === 'function') {
-            return component.value.layout(h, child)
-          }
-
-          return (Array.isArray(component.value.layout) ? component.value.layout : [component.value.layout])
+    function renderLayout(child) {
+      if (typeof pageComponent.value.layout === 'function') {
+        return pageComponent.value.layout(h, child)
+      } else if (Array.isArray(pageComponent.value.layout)) {
+        return pageComponent.value.layout
             .concat(child)
             .reverse()
             .reduce((child, layout) => {
               layout.inheritAttrs = !!layout.inheritAttrs
               return h(layout, { ...page.value.props }, () => child)
             })
+      }
+      return [
+        h(pageComponent.value.layout, { ...page.value.props }, () => child),
+        renderDialog(),
+      ]
+    }
+
+      function renderDialog() {
+        return dialogComponent.value ? h(dialogComponent.value, {
+          ...dialog.value.props,
+          key: dialogKey.value,
+        }) : null
+      }
+
+      return () => {
+        if (pageComponent.value) {
+          const page = renderPage()
+
+          if (pageComponent.value.layout) {
+            return renderLayout(page)
         }
 
-        return child
+        return [page, renderDialog()]
       }
     }
   },
@@ -120,6 +163,7 @@ export const plugin: Plugin = {
 
     Object.defineProperty(app.config.globalProperties, '$inertia', { get: () => router })
     Object.defineProperty(app.config.globalProperties, '$page', { get: () => page.value })
+    Object.defineProperty(app.config.globalProperties, '$dialog', { get: () => dialog.value })
     Object.defineProperty(app.config.globalProperties, '$headManager', { get: () => headManager })
 
     app.mixin(remember)

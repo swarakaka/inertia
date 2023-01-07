@@ -1,4 +1,4 @@
-import { mergeDataIntoQueryString, Method, PageProps, Progress, router, shouldIntercept } from '@inertiajs/core'
+import { mergeDataIntoQueryString, Method, PageProps, Progress, router, shouldIntercept } from '@swarakaka/core'
 import { defineComponent, DefineComponent, h, PropType } from 'vue'
 
 interface InertiaLinkProps {
@@ -56,8 +56,8 @@ const Link: InertiaLink = defineComponent({
       default: null,
     },
     only: {
-      type: Array<string>,
       default: () => [],
+      type: Array<string>
     },
     headers: {
       type: Object,

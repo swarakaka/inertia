@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/core'
+import { router } from '@swarakaka/core'
 import cloneDeep from 'lodash.clonedeep'
 import { isReactive, reactive, ref, Ref, watch } from 'vue'
 

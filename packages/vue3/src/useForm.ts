@@ -1,4 +1,4 @@
-import { Progress, router, VisitOptions } from '@inertiajs/core'
+import { Progress, router, VisitOptions } from '@swarakaka/core'
 import cloneDeep from 'lodash.clonedeep'
 import isEqual from 'lodash.isequal'
 import { reactive, watch } from 'vue'

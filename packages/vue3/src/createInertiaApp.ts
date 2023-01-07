@@ -1,4 +1,4 @@
-import { Page, setupProgress } from '@inertiajs/core'
+import { Page, setupProgress } from '@swarakaka/core'
 import { App as VueApp, createSSRApp, DefineComponent, h, Plugin } from 'vue'
 import App, { InertiaApp, InertiaAppProps, plugin } from './app'
 
