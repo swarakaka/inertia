@@ -25,11 +25,11 @@ export interface InertiaAppProps {
 
 export type InertiaApp = DefineComponent<InertiaAppProps>
 
-const page = ref<Partial<Page>>({})
+const page = ref<Page>(null)
 const pageKey = ref(null)
 const pageComponent = ref(null)
 
-const dialog = ref<Partial<DialogPayload>>({})
+const dialog = ref<DialogPayload>(null)
 const dialogKey = ref(null)
 const dialogComponent = ref(null)
 let headManager = null
@@ -168,6 +168,6 @@ export const plugin: Plugin = {
   },
 }
 
-export function usePage() {
+export function usePage<T>(): Page<T> {
   return page.value
 }
