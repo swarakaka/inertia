@@ -19,6 +19,9 @@ export type FormDataConvertible =
   | null
   | undefined
 
+export type VisitMethod = 'get' | 'post' | 'put' | 'patch' | 'delete'
+
+/** @deprecated */
 export enum Method {
   GET = 'get',
   POST = 'post',
@@ -80,7 +83,7 @@ export type LocationVisit = {
 }
 
 export type Visit = {
-  method: Method
+  method: VisitMethod | Method
   data: RequestPayload
   replace: boolean
   preserveScroll: PreserveStateOption
