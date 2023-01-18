@@ -80,7 +80,7 @@ const App: InertiaApp = defineComponent({
           pageComponent.value = markRaw(args.component)
 
           if (args.dialogComponent) {
-            nextTick(() => {
+           await nextTick(() => {
               function shouldAppear() {
                 const {dialogKey: newKey} = args.dialogComponent
                 const currentKey = [dialogComponent.value || {}, ...Object.values(dialogComponent.value?.components || {})].find(component => component.dialogKey)?.dialogKey
@@ -168,6 +168,7 @@ export const plugin: Plugin = {
   },
 }
 
-export function usePage<T>(): Page<T> {
+export function usePage<T>(): Page<T>{
+  // @ts-ignore
   return page.value
 }
